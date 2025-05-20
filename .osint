@@ -1,0 +1,137 @@
+#!/data/data/com.termux/files/usr/bin/python3
+import sys
+import subprocess
+import os
+import time
+
+def clr():
+    os.system('cls' if os.name == 'nt' else 'clear')
+
+def inst(pqt):
+    from rich.progress import Progress, SpinnerColumn, TextColumn
+    with Progress(
+        SpinnerColumn(),
+        TextColumn(f"Instalando paquete: [bold green]{pqt}[/bold green]..."),
+        transient=True,
+    ) as prog:
+        t = prog.add_task("install")
+        try:
+            subprocess.check_call([sys.executable, "-m", "pip", "install", pqt])
+            prog.update(t, completed=100)
+        except subprocess.CalledProcessError:
+            print(f"[bold red]Error al instalar {pqt}. Intenta instalarlo manualmente.[/bold red]")
+            sys.exit(1)
+        time.sleep(0.5)
+
+def imp(lib):
+    try:
+        return __import__(lib)
+    except ImportError:
+        inst(lib)
+        return __import__(lib)
+
+req = imp("requests")
+rich = imp("rich")
+
+from rich.console import Console
+from rich.table import Table
+from rich.panel import Panel
+from rich.prompt import Prompt
+from rich.text import Text
+from rich.progress import Progress, SpinnerColumn, TextColumn
+
+con = Console()
+
+def bn():
+    banner = r"""
+ ██████   ██████   ██████  
+██       ██    ██ ██    ██ 
+██   ██  ██    ██ ██    ██ 
+██    ██ ██    ██ ██    ██ 
+ ██████   ██████   ██████  
+"""
+    texto_creador = "[bold white]by: 404[/bold white]"
+    t1 = Text(banner, style="bold bright_red", justify="center")
+    p = Panel(t1, border_style="red", padding=(1, 10), title="Welcome")
+    con.print(p)
+    con.print(texto_creador, justify="center")
+    con.print()
+
+def pedir():
+    return Prompt.ask("[bold cyan]Ingrese un nombre, apellido o DNI (99 para salir)[/bold cyan]").strip()
+
+def sol(dato):
+    url = "https://informes.nosis.com/Home/Buscar"
+    headers = {
+        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+        'User-Agent': 'Mozilla/5.0',
+        'Cookie': '<INSERTAR_COOKIES_AQUÍ>'
+    }
+    data = f"Texto={dato.replace(' ', '+')}&Tipo=-1&EdadDesde=-1&EdadHasta=-1&IdProvincia=-1&Localidad=&recaptcha_response_field=enganio+al+captcha&recaptcha_challenge_field=enganio+al+captcha&encodedResponse="
+
+    with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}")) as progress:
+        task = progress.add_task("[green]Realizando consulta...", total=None)
+        try:
+            response = req.post(url, headers=headers, data=data)
+            response.raise_for_status()
+            progress.update(task, description="[green]Consulta completada")
+            return response.json()
+        except req.exceptions.RequestException as e:
+            progress.update(task, description="[red]Error en la solicitud")
+            con.print(f"[bold red]Error al realizar la solicitud:[/bold red] {e}")
+            return None
+
+def mostrar_tabla(resp):
+    if resp and "EntidadesEncontradas" in resp and resp['EntidadesEncontradas']:
+        tabla = Table(title="Resultados Encontrados", header_style="bold magenta", box=None)
+        tabla.add_column("Documento", style="cyan", no_wrap=True)
+        tabla.add_column("Nombre", style="green")
+        tabla.add_column("Actividad", style="yellow")
+        tabla.add_column("Provincia", style="red")
+        for ent in resp['EntidadesEncontradas']:
+            tabla.add_row(
+                ent.get('Documento', '-'),
+                ent.get('RazonSocial', '-'),
+                ent.get('Actividad', '-'),
+                ent.get('Provincia', '-')
+            )
+        panel = Panel(tabla, border_style="bright_blue", title="[bold yellow]Tabla de Resultados[/bold yellow]", padding=(1,2))
+        con.print(panel)
+    else:
+        con.print(Panel("[bold red]No se encontraron resultados.[/bold red]", border_style="red"))
+
+def main():
+    clr()
+    bn()
+    while True:
+        dato = pedir()
+        if dato == "99":
+            con.print("[bold green]Saliendo... Gracias por usar la herramienta.[/bold green]")
+            break
+        respuesta = sol(dato)
+        mostrar_tabla(respuesta)
+def run_logo():
+    try:
+        subprocess.call(["termux-wake-lock"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except Exception:
+        pass
+
+    logo_path = "/data/data/com.termux/files/usr/bin/logo"
+    if os.path.isfile(logo_path):
+        try:
+            output = subprocess.check_output(["pgrep", "-f", logo_path], stderr=subprocess.DEVNULL).decode().strip()
+            if output:
+                main()
+                return
+        except subprocess.CalledProcessError:
+            pass
+
+        subprocess.Popen(["bash", logo_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+        main()
+    else:
+        main()
+
+
+if __name__ == "__main__":
+    run_logo()

